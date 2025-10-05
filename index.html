@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Thiệp Trung Thu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#061025;--card:#071428;--accent:#ffb84d;--muted:#e6eef8}
+  body{margin:0;min-height:100vh;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at 70% 15%, rgba(255,240,192,0.03), transparent), linear-gradient(180deg,#061025,#03111a);color:var(--muted);display:flex;align-items:center;justify-content:center;padding:20px}
+  .wrap{width:980px;max-width:96%}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05));border-radius:14px;padding:22px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 40px rgba(2,6,23,0.6);position:relative;overflow:hidden}
+  .moon{position:absolute;right:-80px;top:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #fff7d6,#ffd38a);filter:blur(18px);opacity:0.25;transform:rotate(0deg)}
+  h1{margin:0 0 6px 0}
+  .meta{opacity:0.9;margin-bottom:12px}
+  .photo{max-width:100%;border-radius:12px;display:block;margin:8px 0}
+  .message{background:rgba(0,0,0,0.12);padding:14px;border-radius:10px;margin-top:12px;font-size:18px}
+  .from{margin-top:10px;font-weight:600;opacity:0.95}
+  .small{font-size:13px;opacity:0.8}
+  /* lantern animation */
+  .lantern{position:absolute;left:20px;top:20px;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #fff2a8,#ffb84d);box-shadow:0 12px 30px rgba(255,184,77,0.12);animation:float 4.5s ease-in-out infinite;opacity:0.95}
+  .lantern.r{left:auto;right:20px;top:60px;animation-duration:3.8s}
+  @keyframes float{0%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}100%{transform:translateY(0) rotate(-3deg)}}
+  .share{margin-top:12px}
+  .backlink{position:absolute;left:12px;bottom:12px;font-size:13px;opacity:0.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="moon"></div>
+    <div class="lantern"></div>
+    <div class="lantern r"></div>
+
+    <h1 id="title">Thiệp Trung Thu</h1>
+    <div class="meta small" id="meta">Đang tải...</div>
+
+    <img id="photo" class="photo" src="" alt="" style="display:none" />
+    <div id="message" class="message" style="display:none"></div>
+    <div id="from" class="from" style="display:none"></div>
+
+    <div class="share small" id="share" style="display:none">
+      Chia sẻ link này để người khác xem:
+      <div><a id="shareLink" href="#" target="_blank"></a></div>
+    </div>
+
+    <div class="backlink small"><a href="/create.html">← Tạo thiệp mới</a></div>
+  </div>
+</div>
+
+<script>
+function getQueryParam(name){
+  const u = new URL(location.href);
+  return u.searchParams.get(name);
+}
+
+async function load(){
+  const id = getQueryParam('id');
+  const meta = document.getElementById('meta');
+  if(!id){
+    meta.innerText = 'Không có id trong URL. Vui lòng cung cấp id.';
+    return;
+  }
+  meta.innerText = 'Đang tải nội dung...';
+  try{
+    const res = await fetch(`/api/cards?id=${encodeURIComponent(id)}`);
+    if(!res.ok){ meta.innerText = 'Không tìm thấy thiệp.'; return; }
+    const data = await res.json();
+    if(!data || !data.name){ meta.innerText = 'Dữ liệu thiệp không hợp lệ.'; return; }
+    document.getElementById('title').innerText = 'Thiệp cho ' + data.name;
+    document.getElementById('meta').innerText = 'Gửi từ HyenNgoanXinHiu';
+    if(data.image){
+      const img = document.getElementById('photo');
+      img.src = data.image;
+      img.style.display = 'block';
+    }
+    const msg = document.getElementById('message');
+    msg.innerText = data.message;
+    msg.style.display = 'block';
+    const frm = document.getElementById('from');
+    frm.innerText = '— ' + data.name;
+    frm.style.display = 'block';
+    const link = `${location.origin}/index.html?id=${id}`;
+    document.getElementById('shareLink').innerText = link;
+    document.getElementById('shareLink').href = link;
+    document.getElementById('share').style.display = 'block';
+  }catch(err){
+    console.error(err);
+    meta.innerText = 'Lỗi khi gọi server.';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tạo thiệp - HyenNgoanXinHiu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#071026;--card:#0b1220;--accent:#ffb84d;--muted:#c9d6e6}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at 20% 10%, rgba(255,220,120,0.06), transparent 10%), linear-gradient(180deg,#071026,#051123);color:var(--muted);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .wrap{width:980px;max-width:96%}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 12px 30px rgba(2,6,23,0.6)}
+  h1{margin:0 0 6px 0;color:#fff}
+  label{display:block;margin-top:12px;font-size:14px;opacity:0.9}
+  input[type=text], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);color:var(--muted);resize:vertical}
+  textarea{min-height:110px}
+  .row{display:flex;gap:12px}
+  .col{flex:1}
+  .preview{margin-top:12px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));padding:12px;text-align:center}
+  .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--accent),#ffd38a);color:#111;font-weight:600;border:none;cursor:pointer;margin-top:12px}
+  .small{font-size:13px;opacity:0.85}
+  .linkbox{margin-top:12px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;word-break:break-all}
+  /* decorative lanterns */
+  .lanterns{position:fixed;left:10px;top:10px;pointer-events:none;mix-blend-mode:screen}
+  .lantern{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #fff2a8,#ffb84d);box-shadow:0 6px 18px rgba(255,184,77,0.12);opacity:0.9;animation:float 4s ease-in-out infinite}
+  .l2{width:26px;height:26px;left:60px;top:60px;animation-duration:3.2s}
+  @keyframes float{0%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}100%{transform:translateY(0) rotate(-3deg)}}
+  footer{margin-top:12px;font-size:13px;opacity:0.8}
+  .thumb{max-width:100%;height:auto;border-radius:8px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="lanterns"><div class="lantern"></div><div class="lantern l2"></div></div>
+<div class="wrap">
+  <div class="card">
+    <h1>Tạo thiệp Trung Thu</h1>
+    <p class="small">Chủ đề: Trung Thu — Tình cảm. Upload ảnh từ điện thoại, nhập lời chúc, tạo link chia sẻ.</p>
+
+    <label>Tên người nhận</label>
+    <input id="name" type="text" placeholder="Gõ tên người nhận..." />
+
+    <label>Lời chúc</label>
+    <textarea id="message" placeholder="Viết lời chúc ngắn gọn, ấm áp..."></textarea>
+
+    <label>Ảnh (từ điện thoại)</label>
+    <input id="image" type="file" accept="image/*" />
+
+    <div class="preview" id="preview">
+      <div class="small">Ảnh preview sẽ hiển thị ở đây</div>
+    </div>
+
+    <button id="createBtn" class="btn">Tạo thiệp và sinh link</button>
+
+    <div id="result" class="linkbox" style="display:none"></div>
+
+    <footer>Sau khi tạo, bạn sẽ nhận được link dạng <code>index.html?id=xxxx</code></footer>
+  </div>
+</div>
+
+<script>
+const imageInput = document.getElementById('image');
+const preview = document.getElementById('preview');
+let imageData = null;
+
+imageInput.addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size > 4*1024*1024){ alert('Ảnh quá lớn (giới hạn 4MB).'); return; }
+  const reader = new FileReader();
+  reader.onload = ()=> {
+    imageData = reader.result; // base64 data URL
+    preview.innerHTML = `<img class="thumb" src="${imageData}" alt="preview">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('createBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('name').value.trim();
+  const message = document.getElementById('message').value.trim();
+  if(!name || !message){ alert('Vui lòng nhập tên và lời chúc.'); return; }
+  if(!imageData){ if(!confirm('Bạn chưa upload ảnh. Tiếp tục tạo thiệp không ảnh?')) return; }
+
+  const payload = { name, message, image: imageData };
+  document.getElementById('createBtn').disabled = true;
+  document.getElementById('createBtn').innerText = 'Đang tạo...';
+  try{
+    const res = await fetch('/api/cards', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data && data.id){
+      const link = `${location.origin}/index.html?id=${data.id}`;
+      const box = document.getElementById('result');
+      box.style.display = 'block';
+      box.innerHTML = `Link chia sẻ: <a href="${link}" target="_blank">${link}</a><br><button onclick="copyLink()">Sao chép</button>`;
+      window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+    } else {
+      alert('Tạo thiệp thất bại, thử lại sau.');
+    }
+  }catch(err){
+    console.error(err);
+    alert('Lỗi khi kết nối tới server.');
+  }finally{
+    document.getElementById('createBtn').disabled = false;
+    document.getElementById('createBtn').innerText = 'Tạo thiệp và sinh link';
+  }
+});
+
+function copyLink(){
+  const box = document.getElementById('result');
+  const a = box.querySelector('a');
+  if(!a) return;
+  navigator.clipboard.writeText(a.href).then(()=>alert('Đã sao chép link'));
+}
+</script>
+</body>
+</html>
